@@ -4,17 +4,35 @@
 // c. Run created class using DevConsole.
 
 public class QueuableJobClass implements Queueable {
-    public void execute(QueueableContext context) {
-      List<Account> getAccountsWithBillingAddress = [SELECT Id, Name,  BillingStreet, 
-      (SELECT Name, id, Is_Synced__c, Processed_By_Queue__c FROM Contacts) FROM Account WHERE BillingStreet != NULL];
-  
-      List<Contact> contactsForUpdate = [SELECT Name, id, Is_Synced__c, Processed_By_Queue__c FROM Contact WHERE 
-      AccountId IN :getAccountsWithBillingAddress];
-      for (Contact con : contactsForUpdate) {
-        con.Is_Synced__c = false;
-        con.Processed_By_Queue__c = true;
-      }
-  
-      update contactsForUpdate;
-    }
+ 
+  private AccountHelper helper;
+
+  public QueuableJobClass(AccountHelper helper){
+      this.helper = helper;
   }
+
+  public void execute(QueueableContext context){
+      System.debug('inside execute' + helper);
+      Set<Id> accountIds = helper.returnChangedAccounts();
+
+      if (accountIds != null) {
+          List<Account> listOfAccount = [SELECT Id, 
+          (SELECT Id, Is_Synced__c, Processed_By_Queue__c FROM Contacts) 
+          FROM Account WHERE Id IN :accountIds];
+  
+          List<Contact> contactsForUpdate = new List<Contact>();
+
+          for(Account account : listOfAccount){
+              for(Contact contact : account.Contacts){
+                  contact.Is_Synced__c = false;
+                  contact.Processed_By_Queue__c = true;
+                  contactsForUpdate.add(contact);
+              }
+          }
+
+          update contactsForUpdate;
+  }
+}
+}
+//Id jobId = System.enqueueJob(new QueuableJobClass());
+//System.debug([SELECT Id, Status FROM AsyncApexJob WHERE Id = :jobId]);

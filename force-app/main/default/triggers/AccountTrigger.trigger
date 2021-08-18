@@ -7,15 +7,28 @@ trigger AccountTrigger on Account(
   after delete,
   after undelete
 ) {
-  String jsonTriggerNew = json.serialize(Trigger.New);
-  String jsonTriggerOld = json.serialize(Trigger.Old);
-  String jsonTriggerOldMap = json.serialize(Trigger.OldMap);
+AccountTriggerHandler handler = new AccountTriggerHandler();
 
-  AccountTriggerHandler.setTaskIsSyncedToFalse(jsonTriggerNew);
-  AccountTriggerHandler.checkBillingAddress(
-    jsonTriggerNew,
-    jsonTriggerOld,
-    jsonTriggerOldMap
-  );
-  AccountTriggerHandler.checkByQueueable(Trigger.new, Trigger.old, Trigger.oldMap);
+
+if(Trigger.isBefore && Trigger.isInsert){
+    handler.onBeforeInsert();
+}
+if(Trigger.isAfter && Trigger.isInsert){
+    handler.onAfterInsert();
+}
+if(Trigger.isBefore && Trigger.isUpdate){
+    handler.onBeforeUpdate();
+}
+if (Trigger.isAfter && Trigger.isUpdate) {
+    handler.onAfterUpdate();
+}
+if (Trigger.isBefore && Trigger.isDelete) {
+    handler.onBeforeDelete();
+}
+if (Trigger.isAfter && Trigger.isDelete) {
+    handler.onAfterDelete();
+}
+if (Trigger.isUndelete) {
+    handler.onUndelete();
+}
 }
